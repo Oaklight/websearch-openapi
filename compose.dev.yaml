@@ -1,6 +1,6 @@
 services:
-  websearch-openapi-server:
-    container_name: websearch-openapi-server
+  websearch-tool-server:
+    container_name: websearch-tool-server
     build:
       context: .
       dockerfile: Dockerfile
@@ -11,3 +11,8 @@ services:
     environment:
       - API_BEARER_TOKEN=${API_BEARER_TOKEN}
       - SEARXNG_BASE_URL=${SEARXNG_BASE_URL}
+    ## default running in openapi mode
+    ## if you want to run in mcp streamable http mode
+    # command: ["python", "main.py", "--host=0.0.0.0", "--port=8000", "--mode=mcp"]
+    ## # if you want to run in mcp sse mode
+    # command: ["python", "main.py", "--host=0.0.0.0", "--port=8000", "--mode=mcp", "--mcp-mode=sse"]

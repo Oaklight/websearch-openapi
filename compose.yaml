@@ -1,7 +1,7 @@
 services:
-  websearch-openapi-server:
-    container_name: websearch-openapi-server
-    image: oaklight/websearch-openapi-server:latest
+  websearch-tool-server:
+    container_name: websearch-tool-server
+    image: oaklight/websearch-tool-server:0.1.1
     ports:
       - 8000:8000
     env_file:
@@ -9,3 +9,8 @@ services:
     environment:
       - API_BEARER_TOKEN=${API_BEARER_TOKEN}
       - SEARXNG_BASE_URL=${SEARXNG_BASE_URL}
+    ## default running in openapi mode
+    ## if you want to run in mcp streamable http mode
+    # command: ["python", "main.py", "--host=0.0.0.0", "--port=8000", "--mode=mcp"]
+    ## # if you want to run in mcp sse mode
+    # command: ["python", "main.py", "--host=0.0.0.0", "--port=8000", "--mode=mcp", "--mcp-mode=sse"]
