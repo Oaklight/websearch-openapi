@@ -1,0 +1,4 @@
+toolregistry>=0.4.8
+dotenv
+fastapi
+uvicorn
