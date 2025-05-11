@@ -35,6 +35,7 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
             detail="Invalid or missing authentication token",
         )
 
+
 # ======== Define FastAPI app ========
 app = FastAPI(
     title="Tool Registry OpenAPI Server",
@@ -78,7 +79,7 @@ def search_google(
 @app.post(
     "/search_searxng",
     summary="Search SearXNG for a query",
-    dependencies=[Depends(verify_token)],
+    dependencies=[Depends(verify_token)],  # Enabled dependency
 )
 def search_searxng(
     query: str,
@@ -99,6 +100,12 @@ def search_searxng(
             - 'content': The description/content from searxng
             - 'excerpt': Same as content (for compatibility with WebSearchSearxng)
     """
+    if not os.getenv("SEARXNG_BASE_URL"):
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="SearXNG search feature is not configured. Please set the SEARXNG_BASE_URL environment variable.",
+        )
+
     results = websearch_searxng.search(
         query,
         number_results=number_results,
