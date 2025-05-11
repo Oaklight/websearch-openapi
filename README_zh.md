@@ -14,6 +14,8 @@ MCP 默认模式为 Streamable HTTP, URL 为<http://0.0.0.0:8000/mcp>。
 
 SSE 模式需要添加 `--mcp-mode sse`，对应 URL 为<http://0.0.0.0:8000/sse>。
 
+stdio 模式需要添加 `--mcp-mode stdio`。
+
 ## 使用 Docker 启动服务器
 
 ```bash
@@ -64,6 +66,12 @@ docker compose up -d
   command: ["python", "main.py", "--host=0.0.0.0", "--port=8000", "--mode=mcp", "--mcp-mode=sse"]
   ```
 
+- **MCP STDIO 模式**：
+
+  ```yaml
+  command: ["python", "main.py", "--host=0.0.0.0", "--port=8000", "--mode=mcp", "--mcp-mode=stdio"]
+  ```
+
 ## 环境变量配置
 
 可通过以下环境变量来配置服务器：
@@ -100,5 +108,3 @@ docker compose up -d
 
 - **API 模式 (`openapi`)**：建议在生产环境中设置 `API_BEARER_TOKEN` 以保护端点，并正确配置 `SEARXNG_BASE_URL`。
 - **MCP 模式 (`mcp`)**：集成场景通常在未设置 `API_BEARER_TOKEN` 的情况下运行，并且根据需要确定 SearXNG 配置是否可选。
-
-```
