@@ -35,3 +35,25 @@ Once the server is running, visit the following URLs:
 2. **Alternative API Documentation (ReDoc)**
    View the ReDoc documentation at:
    [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc)
+
+### MCP / OpenAPI Mode Switch
+
+The server supports running in multiple modes, configurable via command-line arguments:
+
+- **OpenAPI Mode (default)**:
+
+  ```yaml
+  command: ["python", "main.py", "--host=0.0.0.0", "--port=8000", "--mode=openapi"]
+  ```
+
+- **MCP Streamable HTTP Mode**:
+
+  ```yaml
+  command: ["python", "main.py", "--host=0.0.0.0", "--port=8000", "--mode=mcp"]
+  ```
+
+- **MCP SSE Mode**:
+
+  ```yaml
+  command: ["python", "main.py", "--host=0.0.0.0", "--port=8000", "--mode=mcp", "--mcp-mode=sse"]
+  ```
