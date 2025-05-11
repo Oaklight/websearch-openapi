@@ -1,6 +1,6 @@
 # Tool Registry API
 
-### Start the Server via Uvicorn
+## Start the Server via Uvicorn
 
 ```bash
 uvicorn main:app --reload --port 8000 --host 0.0.0.0
@@ -8,7 +8,7 @@ uvicorn main:app --reload --port 8000 --host 0.0.0.0
 
 This will start the server on the default port (<http://127.0.0.1:8000>).
 
-### Start the Server via Docker
+## Start the Server via Docker
 
 ```bash
 docker run -p 8000:8000 \
@@ -24,7 +24,7 @@ or by docker compose:
 docker compose up -d
 ```
 
-### Explore the API
+## Explore the API
 
 Once the server is running, visit the following URLs:
 
@@ -36,7 +36,7 @@ Once the server is running, visit the following URLs:
    View the ReDoc documentation at:
    [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc)
 
-### MCP / OpenAPI Mode Switch
+## MCP / OpenAPI Mode Switch
 
 The server supports running in multiple modes, configurable via command-line arguments:
 
@@ -57,3 +57,39 @@ The server supports running in multiple modes, configurable via command-line arg
   ```yaml
   command: ["python", "main.py", "--host=0.0.0.0", "--port=8000", "--mode=mcp", "--mcp-mode=sse"]
   ```
+
+## Environment Variable Configuration
+
+To configure the server, you can provide the following environment variables:
+
+1. **`API_BEARER_TOKEN`**:  
+   This token is used for securing API endpoints. If set, it enables authentication for all protected routes using Bearer Token verification. Requests must include an `Authorization` header with the format: `Bearer <your_token>`.  
+   **Behavior**:  
+   - When set, `verify_token` enforces token validation.  
+   - When unset or empty, `verify_token` allows all requests without authentication (useful for testing, or MCP mode where per-request authorization headers are unavailable).
+
+   Example configuration with Docker:
+
+   ```bash
+   -e API_BEARER_TOKEN="my_secure_token"
+   ```
+
+2. **`SEARXNG_BASE_URL`**:  
+   The base URL for SearXNG, a privacy-respecting metasearch engine. This is required for enabling functionality at `/search_searxng`.  
+   **Behavior**:  
+   - If set, the `WebSearchSearxng` tool uses this URL to perform queries.  
+   - If unset, the `/search_searxng` endpoint will raise errors due to invalid configuration.
+
+   Example configuration with Docker:
+
+   ```bash
+   -e SEARXNG_BASE_URL="https://searxng.instance.com"
+   ```
+
+3. **Other Variables**:  
+   These can be configured depending on extensions or additional tools integrated into the registry. Refer to the relevant tool documentation for details.
+
+Ensure environment variables are configured based on the server mode:
+
+- **API Mode (`openapi`)**: It is recommended to set `API_BEARER_TOKEN` for production to secure endpoints.
+- **MCP Mode (`mcp`)**: Integration scenarios often run without authentication (`API_BEARER_TOKEN` unset), but this can be adjusted depending on client capabilities.
