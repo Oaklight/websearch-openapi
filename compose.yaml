@@ -1,0 +1,11 @@
+services:
+  websearch-openapi-server:
+    container_name: websearch-openapi-server
+    image: oaklight/websearch-openapi-server:latest
+    ports:
+      - 8000:8000
+    env_file:
+      - .env
+    environment:
+      - API_BEARER_TOKEN=${API_BEARER_TOKEN}
+      - SEARXNG_BASE_URL=${SEARXNG_BASE_URL}
