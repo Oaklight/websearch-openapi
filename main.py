@@ -142,10 +142,16 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Run the Tool Registry API server.")
     parser.add_argument(
-        "--host", type=str, default="0.0.0.0", help="Host to bind the server to."
+        "--host",
+        type=str,
+        default="0.0.0.0",
+        help="Host to bind the server to. Default is 0.0.0.0.",
     )
     parser.add_argument(
-        "--port", type=int, default=8000, help="Port to bind the server to."
+        "--port",
+        type=int,
+        default=8000,
+        help="Port to bind the server to. Default is 8000.",
     )
     parser.add_argument(
         "--mode",
@@ -155,9 +161,9 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--mcp-mode",
-        choices=["streamable-http", "sse"],
+        choices=["streamable-http", "sse", "stdio"],
         default="streamable-http",
-        help="MCP transport mode.",
+        help="MCP transport mode for mcp mode. Default is streamable-http.",
     )
     args = parser.parse_args()
 
@@ -166,4 +172,7 @@ if __name__ == "__main__":
 
         uvicorn.run(app, host=args.host, port=args.port)
     elif args.mode == "mcp":
-        mcp.run(transport=args.mcp_mode, host=args.host, port=args.port)
+        if args.mcp_mode == "stdio":
+            mcp.run()  # Run MCP in stdio mode; assumes FastMCP supports this method
+        else:
+            mcp.run(transport=args.mcp_mode, host=args.host, port=args.port)
