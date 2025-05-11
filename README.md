@@ -78,7 +78,7 @@ To configure the server, you can provide the following environment variables:
    The base URL for SearXNG, a privacy-respecting metasearch engine. This is required for enabling functionality at `/search_searxng`.  
    **Behavior**:  
    - If set, the `WebSearchSearxng` tool uses this URL to perform queries.  
-   - If unset, the `/search_searxng` endpoint will raise errors due to invalid configuration.
+   - If unset or empty, the `/search_searxng` endpoint will be **disabled** (i.e., requests to this endpoint will raise an error) with a `503 Service Unavailable` status code. The error will explicitly state that the SearXNG search feature is not configured and suggest setting the `SEARXNG_BASE_URL`.
 
    Example configuration with Docker:
 
@@ -86,10 +86,7 @@ To configure the server, you can provide the following environment variables:
    -e SEARXNG_BASE_URL="https://searxng.instance.com"
    ```
 
-3. **Other Variables**:  
-   These can be configured depending on extensions or additional tools integrated into the registry. Refer to the relevant tool documentation for details.
-
 Ensure environment variables are configured based on the server mode:
 
-- **API Mode (`openapi`)**: It is recommended to set `API_BEARER_TOKEN` for production to secure endpoints.
-- **MCP Mode (`mcp`)**: Integration scenarios often run without authentication (`API_BEARER_TOKEN` unset), but this can be adjusted depending on client capabilities.
+- **API Mode (`openapi`)**: It is recommended to set `API_BEARER_TOKEN` for production to secure endpoints and ensure proper configuration for `SEARXNG_BASE_URL`.
+- **MCP Mode (`mcp`)**: Integration scenarios often run without authentication (`API_BEARER_TOKEN` unset), and SearXNG may optionally be configured depending on the need.
