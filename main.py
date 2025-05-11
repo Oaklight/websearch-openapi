@@ -4,6 +4,7 @@ from typing import Dict, List, Optional
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastmcp import FastMCP
 from toolregistry.hub import (
     WebSearchGoogle,
     WebSearchSearxng,
@@ -35,7 +36,7 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
 
 # ======== Define FastAPI app ========
 app = FastAPI(
-    title="Tool Registry API",
+    title="Tool Registry OpenAPI Server",
     description="An API for accessing various tools like calculators, unit converters, and web search engines.",
     version="0.1.0",
 )
@@ -44,7 +45,7 @@ app = FastAPI(
 @app.post(
     "/search_google",
     summary="Search Google for a query",
-    dependencies=[Depends(verify_token)],
+    # dependencies=[Depends(verify_token)],
 )
 def search_google(
     query: str,
@@ -76,7 +77,7 @@ def search_google(
 @app.post(
     "/search_searxng",
     summary="Search SearXNG for a query",
-    dependencies=[Depends(verify_token)],
+    # dependencies=[Depends(verify_token)],
 )
 def search_searxng(
     query: str,
@@ -108,7 +109,7 @@ def search_searxng(
 @app.post(
     "/extract_webpage",
     summary="Extract content from a webpage",
-    dependencies=[Depends(verify_token)],
+    # dependencies=[Depends(verify_token)],
 )
 def extract_webpage(url: str, timeout: Optional[float] = None) -> str:
     """Extract content from a given URL using available methods.
@@ -122,3 +123,39 @@ def extract_webpage(url: str, timeout: Optional[float] = None) -> str:
     """
     content = WebSearchGeneral.extract(url, timeout=timeout)
     return content
+
+
+# ======== FastMCP server ========
+
+mcp = FastMCP.from_fastapi(app, name="Tool Registry MCP Server")
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Run the Tool Registry API server.")
+    parser.add_argument(
+        "--host", type=str, default="0.0.0.0", help="Host to bind the server to."
+    )
+    parser.add_argument(
+        "--port", type=int, default=8000, help="Port to bind the server to."
+    )
+    parser.add_argument(
+        "--mode",
+        choices=["openapi", "mcp"],
+        default="openapi",
+        help="Server mode: openapi or mcp. Default is openapi.",
+    )
+    parser.add_argument(
+        "--mcp-mode",
+        choices=["streamable-http", "sse"],
+        default="streamable-http",
+        help="MCP transport mode.",
+    )
+    args = parser.parse_args()
+
+    if args.mode == "openapi":
+        import uvicorn
+
+        uvicorn.run(app, host=args.host, port=args.port)
+    elif args.mode == "mcp":
+        mcp.run(transport=args.mcp_mode, host=args.host, port=args.port)
