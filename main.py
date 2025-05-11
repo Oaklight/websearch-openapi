@@ -27,12 +27,13 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
     valid_token = os.getenv(
         "API_BEARER_TOKEN"
     )  # Store your token in an environment variable for safety
+    if not valid_token:  # If the token is empty or not set, disable verification
+        return
     if credentials.credentials != valid_token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or missing authentication token",
         )
-
 
 # ======== Define FastAPI app ========
 app = FastAPI(
@@ -45,7 +46,7 @@ app = FastAPI(
 @app.post(
     "/search_google",
     summary="Search Google for a query",
-    # dependencies=[Depends(verify_token)],
+    dependencies=[Depends(verify_token)],
 )
 def search_google(
     query: str,
@@ -77,7 +78,7 @@ def search_google(
 @app.post(
     "/search_searxng",
     summary="Search SearXNG for a query",
-    # dependencies=[Depends(verify_token)],
+    dependencies=[Depends(verify_token)],
 )
 def search_searxng(
     query: str,
@@ -109,7 +110,7 @@ def search_searxng(
 @app.post(
     "/extract_webpage",
     summary="Extract content from a webpage",
-    # dependencies=[Depends(verify_token)],
+    dependencies=[Depends(verify_token)],
 )
 def extract_webpage(url: str, timeout: Optional[float] = None) -> str:
     """Extract content from a given URL using available methods.
