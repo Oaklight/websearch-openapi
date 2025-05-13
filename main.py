@@ -1,14 +1,11 @@
 import os
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from fastmcp import FastMCP
-from toolregistry.hub import (
-    WebSearchGoogle,
-    WebSearchSearxng,
-)
+from toolregistry.hub import Calculator, WebSearchGoogle, WebSearchSearxng
 from toolregistry.hub.websearch import WebSearchGeneral
 
 load_dotenv()
@@ -16,7 +13,7 @@ load_dotenv()
 # ======== initialize tools ========
 websearch_google = WebSearchGoogle()
 websearch_searxng = WebSearchSearxng(searxng_base_url=os.getenv("SEARXNG_BASE_URL"))
-
+calculator = Calculator()
 # ======== Define security ========
 # Define the token authentication scheme
 security = HTTPBearer()
@@ -36,38 +33,88 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
         )
 
 
+token_required = bool(os.getenv("API_BEARER_TOKEN"))
+security_dependency = [] if not token_required else [Depends(verify_token)]
+
+
 # ======== Define FastAPI app ========
 app = FastAPI(
     title="Tool Registry OpenAPI Server",
     description="An API for accessing various tools like calculators, unit converters, and web search engines.",
-    version="0.1.0",
+    version="0.2.0",
 )
+
+
+@app.post(
+    "/calc_help",
+    summary="Get help with calculator functions",
+    description=calculator.help.__doc__,
+    dependencies=security_dependency,
+    operation_id="calc_help",
+)
+def calc_help(fn_name: str) -> str:
+    """Get help with calculator functions."""
+    try:
+        return calculator.help(fn_name)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid function name: {str(e)}",
+        ) from e
+
+
+@app.post(
+    "/calc_allowed_fns",
+    summary="Get allowed functions for calculator",
+    description=calculator.allowed_fns_in_evaluate.__doc__,
+    dependencies=security_dependency,
+    operation_id="calc_allowed_fns",
+)
+def calc_allowed_fns() -> List[str]:
+    """Get allowed functions for calculator."""
+    return calculator.allowed_fns_in_evaluate()
+
+
+@app.post(
+    "/calc_evaluate",
+    summary="Evaluate a mathematical expression",
+    description=calculator.evaluate.__doc__.replace(
+        "This method is intended for complex expressions that combine two or more operations or advanced mathematical functions.",
+        "",
+    )
+    .replace(
+        "For simple, single-step operations, please directly use the corresponding static method (e.g., add, subtract).",
+        "",
+    )
+    .replace("allowed_fns_in_evaluate()", "calc_allowed_fns")
+    .replace("help", "calc_help"),
+    dependencies=security_dependency,
+    operation_id="calc_evaluate",
+)
+def calc_evaluate(expression: str) -> Union[float, int, bool]:
+    """Evaluates a mathematical expression using a unified interface."""
+    try:
+        return calculator.evaluate(expression)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid expression: {str(e)}",
+        ) from e
 
 
 @app.post(
     "/search_google",
     summary="Search Google for a query",
-    dependencies=[Depends(verify_token)],
+    description=websearch_google.search.__doc__,
+    dependencies=security_dependency,
+    operation_id="search_google",
 )
 def search_google(
     query: str,
     number_results: int = 5,
     timeout: Optional[float] = None,
 ) -> List[Dict[str, str]]:
-    """Perform search and return results.
-
-    Args:
-        query: The search query.
-        number_results: The maximum number of results to return. Default is 5.
-        timeout: Optional timeout override in seconds.
-
-    Returns:
-        List of search results, each containing:
-            - 'title': The title of the search result
-            - 'url': The URL of the search result
-            - 'content': The description/content from Google
-            - 'excerpt': Same as content (for compatibility with WebSearchSearxng)
-    """
+    """Perform search and return results."""
     results = websearch_google.search(
         query,
         number_results=number_results,
@@ -79,27 +126,16 @@ def search_google(
 @app.post(
     "/search_searxng",
     summary="Search SearXNG for a query",
-    dependencies=[Depends(verify_token)],  # Enabled dependency
+    description=websearch_searxng.search.__doc__,
+    dependencies=security_dependency,
+    operation_id="search_searxng",
 )
 def search_searxng(
     query: str,
     number_results: int = 5,
     timeout: Optional[float] = None,
 ) -> List[Dict[str, str]]:
-    """Perform search and return results.
-
-    Args:
-        query: The search query.
-        number_results: The maximum number of results to return. Default is 5.
-        timeout: Optional timeout override in seconds.
-
-    Returns:
-        List of search results, each containing:
-            - 'title': The title of the search result
-            - 'url': The URL of the search result
-            - 'content': The description/content from searxng
-            - 'excerpt': Same as content (for compatibility with WebSearchSearxng)
-    """
+    """Perform search and return results."""
     if not os.getenv("SEARXNG_BASE_URL"):
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -117,18 +153,12 @@ def search_searxng(
 @app.post(
     "/extract_webpage",
     summary="Extract content from a webpage",
-    dependencies=[Depends(verify_token)],
+    description=WebSearchGeneral.extract.__doc__,
+    dependencies=security_dependency,
+    operation_id="extract_webpage",
 )
 def extract_webpage(url: str, timeout: Optional[float] = None) -> str:
-    """Extract content from a given URL using available methods.
-
-    Args:
-        url (str): The URL to extract content from.
-        timeout (float, optional): Request timeout in seconds. Defaults to TIMEOUT_DEFAULT (10). Usually not needed.
-
-    Returns:
-        str: Extracted content from the URL, or empty string if extraction fails.
-    """
+    """Extract content from a given URL using available methods."""
     content = WebSearchGeneral.extract(url, timeout=timeout)
     return content
 
