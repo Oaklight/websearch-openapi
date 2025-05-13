@@ -1,6 +1,6 @@
 services:
-  websearch-tool-server:
-    container_name: websearch-tool-server
+  toolregistry-server:
+    container_name: toolregistry-server
     build:
       context: .
       dockerfile: Dockerfile

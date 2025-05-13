@@ -1,7 +1,7 @@
 services:
-  websearch-tool-server:
-    container_name: websearch-tool-server
-    image: oaklight/websearch-tool-server:0.1.1
+  toolregistry-server:
+    container_name: toolregistry-server
+    image: oaklight/toolregistry-server:latest
     ports:
       - 8000:8000
     env_file:
