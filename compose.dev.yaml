@@ -1,6 +1,6 @@
 services:
-  toolregistry-server:
-    container_name: toolregistry-server
+  openwebui-tool-server:
+    container_name: openwebui-tool-server
     build:
       context: .
       dockerfile: Dockerfile

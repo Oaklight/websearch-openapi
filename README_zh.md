@@ -1,4 +1,4 @@
-# websearch-openapi-mcp
+# openwebui-tool-server
 
 [English](README_en.md) | [中文](README_zh.md)
 
@@ -20,10 +20,10 @@ stdio 模式需要添加 `--mcp-mode stdio`。
 
 ```bash
 docker run -p 8000:8000 \
-    --name websearch-openapi-server \
+    --name openwebui-tool-server \
    -e API_BEARER_TOKEN="your_token_here" \
    -e SEARXNG_BASE_URL="https://searxng.url" \
-   oaklight/websearch-openapi-server:latest
+   oaklight/openwebui-tool-server:latest
 ```
 
 或者使用 docker compose 启动：

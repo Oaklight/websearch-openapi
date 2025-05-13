@@ -1,7 +1,7 @@
 services:
-  toolregistry-server:
-    container_name: toolregistry-server
-    image: oaklight/toolregistry-server:latest
+  openwebui-tool-server:
+    container_name: openwebui-tool-server
+    image: oaklight/openwebui-tool-server:latest
     ports:
       - 8000:8000
     env_file:
