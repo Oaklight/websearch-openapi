@@ -7,8 +7,8 @@ from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from fastmcp import FastMCP
 from pydantic import BaseModel, Field
-from toolregistry.hub import Calculator, WebSearchGoogle, WebSearchSearxng
-from toolregistry.hub.websearch import WebSearchGeneral
+from toolregistry.hub import Calculator, WebSearchGoogle, WebSearchSearXNG
+from toolregistry.hub.websearch import Fetch
 
 
 class CalcEvaluateRequest(BaseModel):
@@ -18,6 +18,10 @@ class CalcEvaluateRequest(BaseModel):
         example="26 * 9 / 5 + 32",
     )
 
+class CalcListAllowedFnsRequest(BaseModel):
+    with_help: bool = Field(
+        False, description="Include help messages for each function"
+    )
 
 class CalcHelpRequest(BaseModel):
     fn_name: str = Field(
@@ -25,7 +29,7 @@ class CalcHelpRequest(BaseModel):
     )
 
 
-class SearchRequest(BaseModel):
+class WebSearchRequest(BaseModel):
     query: str = Field(
         ..., description="Search query string", example="weather in Beijing"
     )
@@ -35,7 +39,7 @@ class SearchRequest(BaseModel):
     timeout: Optional[float] = Field(None, description="Timeout in seconds")
 
 
-class ExtractWebpageRequest(BaseModel):
+class WebFetchWebpageRequest(BaseModel):
     url: str = Field(
         ..., description="URL of webpage to extract", example="https://example.com"
     )
@@ -46,7 +50,7 @@ load_dotenv()
 
 # ======== initialize tools ========
 websearch_google = WebSearchGoogle()
-websearch_searxng = WebSearchSearxng(searxng_base_url=os.getenv("SEARXNG_BASE_URL"))
+websearch_searxng = WebSearchSearXNG(searxng_base_url=os.getenv("SEARXNG_BASE_URL"))
 calculator = Calculator()
 # ======== Define security ========
 # Define the token authentication scheme
@@ -80,10 +84,10 @@ app = FastAPI(
 
 
 @app.post(
-    "/calc_help",
+    "/calc-help",
     summary="Get help with calculator functions",
     dependencies=security_dependency,
-    operation_id="calc_help",
+    operation_id="calc-help",
 )
 def calc_help(data: CalcHelpRequest) -> str:
     """Get help with calculator functions."""
@@ -97,32 +101,35 @@ def calc_help(data: CalcHelpRequest) -> str:
 
 
 @app.post(
-    "/calc_allowed_fns",
-    summary="Get allowed functions for calculator",
+    "/calc-list_allowed_fns",
+    summary="Get allowed functions for calc_evaluate",
+    description=calculator.list_allowed_fns.__doc__,
     dependencies=security_dependency,
-    operation_id="calc_allowed_fns",
+    operation_id="calc-list_allowed_fns",
 )
-def calc_allowed_fns() -> List[str]:
+def calc_list_allowed_fns(data: CalcListAllowedFnsRequest) -> str:
     """Get allowed functions for calculator."""
-    return calculator.allowed_fns_in_evaluate()
+    return calculator.list_allowed_fns(data.with_help)
 
 
 @app.post(
-    "/calc_evaluate",
+    "/calc-evaluate",
     summary="Evaluate a mathematical expression",
     description=textwrap.dedent(
-        """
-        The full list of supported functions can be obtained by calling `calc_allowed_fns`. Anything beyond this list is not supported. `calc_help` method can be used to get detailed information about each function.
+        """Evaluates a mathematical expression.
 
-        The `expression` should be a valid Python expression utilizing these functions.
-        For example: "add(2, 3) * power(2, 3) + sqrt(16)".
+        The `expression` can use named functions like `add(2, 3)` or native operators like `2 + 3`. Pay attention to operator precedence and use parentheses to ensure the intended order of operations. For example: `"add(2, 3) * pow(2, 3) + sqrt(16)"` or `"(2 + 3) * (2 ** 3) + sqrt(16)"` or mixed.
+
+        - Use `calc-list_allowed_fns()` to view available functions. Set `with_help` to `True` to include function signatures and docstrings.
+        - Use `calc-help` for detailed information on specific functions.
+
+        **Note**: If an error occurs due to an invalid expression, query the `help` method to check the function usage and ensure it is listed by `calc-list_allowed_fns()`.
         """
     ),
     dependencies=security_dependency,
-    operation_id="calc_evaluate",
+    operation_id="calc-evaluate",
 )
 def calc_evaluate(data: CalcEvaluateRequest) -> Union[float, int, bool]:
-    """Evaluates a mathematical expression using a unified interface."""
     expression = data.expression.strip()  # Remove leading/trailing whitespace
     if not expression:
         raise HTTPException(
@@ -139,21 +146,15 @@ def calc_evaluate(data: CalcEvaluateRequest) -> Union[float, int, bool]:
 
 
 @app.post(
-    "/search_google",
+    "/web-search_google",
     summary="Search Google for a query",
-    description=websearch_google.search.__doc__,
+    description=websearch_google.search.__doc__
+    + "\n Note: when used, properly cited results' URLs at the end of the generated content, unless instructed otherwise."
+    + "\nIncrease the `number_results` in case of deep research.",
     dependencies=security_dependency,
-    operation_id="search_google",
+    operation_id="web-search_google",
 )
-def search_google(data: SearchRequest) -> List[Dict[str, str]]:
-    """Perform Google search and return results.
-
-    Args:
-        data: Contains search query parameters.
-
-    Returns:
-        List[Dict[str, str]]: List of search results.
-    """
+def search_google(data: WebSearchRequest) -> List[Dict[str, str]]:
     results = websearch_google.search(
         data.query,
         number_results=data.number_results,
@@ -163,21 +164,15 @@ def search_google(data: SearchRequest) -> List[Dict[str, str]]:
 
 
 @app.post(
-    "/search_searxng",
+    "/web-search_searxng",
     summary="Search SearXNG for a query",
-    description=websearch_searxng.search.__doc__,
+    description=websearch_searxng.search.__doc__
+    + "\n Note: when used, properly cited results' URLs at the end of the generated content, unless instructed otherwise."
+    + "\nIncrease the `number_results` in case of deep research.",
     dependencies=security_dependency,
-    operation_id="search_searxng",
+    operation_id="web-search_searxng",
 )
-def search_searxng(data: SearchRequest) -> List[Dict[str, str]]:
-    """Perform SearXNG search and return results.
-
-    Args:
-        data: Contains search query parameters.
-
-    Returns:
-        List[Dict[str, str]]: List of search results.
-    """
+def search_searxng(data: WebSearchRequest) -> List[Dict[str, str]]:
     if not os.getenv("SEARXNG_BASE_URL"):
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -193,22 +188,14 @@ def search_searxng(data: SearchRequest) -> List[Dict[str, str]]:
 
 
 @app.post(
-    "/extract_webpage",
+    "/web-fetch_webpage",
     summary="Extract content from a webpage",
-    description=WebSearchGeneral.extract.__doc__,
+    description=Fetch.fetch_content.__doc__,
     dependencies=security_dependency,
-    operation_id="extract_webpage",
+    operation_id="web-fetch_webpage",
 )
-def extract_webpage(data: ExtractWebpageRequest) -> str:
-    """Extract content from a webpage.
-
-    Args:
-        data: Contains the URL and optional timeout.
-
-    Returns:
-        str: Extracted webpage content.
-    """
-    content = WebSearchGeneral.extract(data.url, timeout=data.timeout)
+def fetch_webpage(data: WebFetchWebpageRequest) -> str:
+    content = Fetch.fetch_content(data.url, timeout=data.timeout)
     return content
 
 
