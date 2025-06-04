@@ -1,3 +1,4 @@
+import json
 import os
 import textwrap
 from typing import Dict, List, Optional, Union
@@ -7,8 +8,13 @@ from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from fastmcp import FastMCP
 from pydantic import BaseModel, Field
-from toolregistry.hub import Calculator, WebSearchGoogle, WebSearchSearXNG
-from toolregistry.hub.websearch import Fetch
+from toolregistry.hub import (
+    Calculator,
+    Fetch,
+    WebSearchBing,
+    WebSearchGoogle,
+    WebSearchSearXNG,
+)
 
 
 class CalcEvaluateRequest(BaseModel):
@@ -50,6 +56,7 @@ load_dotenv()
 
 # ======== initialize tools ========
 websearch_google = WebSearchGoogle()
+websearch_bing = WebSearchBing()
 websearch_searxng = WebSearchSearXNG(searxng_base_url=os.getenv("SEARXNG_BASE_URL"))
 calculator = Calculator()
 # ======== Define security ========
@@ -107,9 +114,12 @@ def calc_help(data: CalcHelpRequest) -> str:
     dependencies=security_dependency,
     operation_id="calc-list_allowed_fns",
 )
-def calc_list_allowed_fns(data: CalcListAllowedFnsRequest) -> str:
+def calc_list_allowed_fns(data: CalcListAllowedFnsRequest) -> Dict[str, str]:
     """Get allowed functions for calculator."""
-    return calculator.list_allowed_fns(data.with_help)
+    allowed = json.loads(calculator.list_allowed_fns(data.with_help))
+    if isinstance(allowed, list):
+        return {fn: "" for fn in allowed}
+    return allowed
 
 
 @app.post(
@@ -162,6 +172,22 @@ def search_google(data: WebSearchRequest) -> List[Dict[str, str]]:
     )
     return results
 
+@app.post(
+    "/web-search_bing",
+    summary="Search Bing for a query",
+    description=websearch_bing.search.__doc__
+    + "\n Note: when used, properly cited results' URLs at the end of the generated content, unless instructed otherwise."
+    + "\nIncrease the `number_results` in case of deep research.",
+    dependencies=security_dependency,
+    operation_id="web-search_bing",
+)
+def search_bing(data: WebSearchRequest) -> List[Dict[str, str]]:
+    results = websearch_bing.search(
+        data.query,
+        number_results=data.number_results,
+        timeout=data.timeout,
+    )
+    return results
 
 @app.post(
     "/web-search_searxng",
